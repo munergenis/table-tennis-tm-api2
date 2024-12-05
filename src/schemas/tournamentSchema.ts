@@ -6,23 +6,31 @@ import { z } from "zod"
 // - es importat pel controlador per validar dades dentrada
 // - pot incloure validacions especifiques dels camps o estructures complexes
 
+// TODO - veure si va aqui o on posar les definicions
 export enum TournamentMode {
   bestOf3 = 'best-of-3',
   bestOf5 = 'best-of-5',
 }
 
-export const TournamentSchema = z.object({
-  name: z.string().min(5),
+// TODO - veure com retornar un status code concret pels errors - ara es retorna 200 encara que hi hagi error
+export const CreateTournamentSchema = z.object({
+  name: z.string().min(5, {
+    message: 'Mínim 5 caracters'
+  }),
   tournamentMode: z.enum([TournamentMode.bestOf3, TournamentMode.bestOf5]),
   // TODO - mirar la validacio de data
   date: z.string().refine((date) => !isNaN(Date.parse(date)), {
-    message: 'Invalid date format',
+    message: 'La data no es vàlida',
   }),
   playersInput: z
     .array(
       z.object({
-        name: z.string().min(2),
-        club: z.string().min(3),
+        playerName: z.string().min(2, {
+          message: 'Mínim 2 caracters'
+        }),
+        playerClub: z.string().min(3, {
+          message: 'Mínim 3 caracters'
+        }),
       })
     )
     .min(8, {
@@ -39,8 +47,10 @@ function isMultipleOfFour(players: any[]) {
 
 // TODO - fer-los opcionals, pero que si s'envien es validin
 export const UpdateTournamentSchema = z.object({
-  name: z.string().min(5),
+  name: z.string().min(5, {
+    message: 'Mínim 5 caracters'
+  }),
   date: z.string().refine((date) => !isNaN(Date.parse(date)), {
-    message: 'Invalid date format',
+    message: 'La data no es vàlida',
   }),
 })

@@ -1,11 +1,13 @@
 import { NextFunction, Request, Response } from "express"
+import RequestWithUser from "../types/express"
 
-export const authenticate = (req: Request, res: Response, next: NextFunction) => {
+export const authenticate = (req: RequestWithUser, res: Response, next: NextFunction): void | Response => {
   // Get token from header 'Authorization' (Bearer xxx-token) xxx = user | admin
   const token = req.headers.authorization?.split(' ')[1]
 
   if (!token) {
-    return res.status(401).json({ message: 'No autenticat, token requerit' })
+    // UNAUTHORIZED
+    return res.status(401).json({ message: 'Unauthorized, token required' })
   }
 
   // Set a role based on token value
@@ -21,7 +23,8 @@ export const authenticate = (req: Request, res: Response, next: NextFunction) =>
       break
 
     default:
-      return res.status(403).json({ message: 'Token no valid' })
+      // FORBIDDEN
+      return res.status(403).json({ message: 'Forbidden, role not allowed' })
   }
 
   // Set role to object 'user' of req to use it on controllers

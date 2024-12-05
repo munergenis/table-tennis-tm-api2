@@ -9,6 +9,6 @@ app.use(express.json())
 // TODO - revisar - en teoria es per manejar formularis
 app.use(express.urlencoded({ extended: true }))
 
-app.use('/tournaments', authenticate, tournamentRouter)
+app.use('/tournaments', tournamentRouter)
 
 export default app
