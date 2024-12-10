@@ -1,7 +1,6 @@
 import { NextFunction, Request, Response } from "express"
-import RequestWithUser from "../types/express"
 
-export const authenticate = (req: RequestWithUser, res: Response, next: NextFunction): void | Response => {
+export const authenticate = (req: Request, res: Response, next: NextFunction): void | Response => {
   // Get token from header 'Authorization' (Bearer xxx-token) xxx = user | admin
   const token = req.headers.authorization?.split(' ')[1]
 
@@ -28,7 +27,7 @@ export const authenticate = (req: RequestWithUser, res: Response, next: NextFunc
   }
 
   // Set role to object 'user' of req to use it on controllers
-  req.user = { role: userRole }
+  // req.user = { role: userRole }
 
   next()
 }

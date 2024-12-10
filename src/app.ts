@@ -1,5 +1,5 @@
 import express from "express"
-import tournamentRouter from './routes/tournamentRouter.js'
+import tournamentRouter from './tournaments/tournamentRouter.js'
 import { authenticate } from "./middleware/auth.js"
 
 const app = express()

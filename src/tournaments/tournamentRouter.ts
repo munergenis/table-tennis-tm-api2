@@ -1,7 +1,6 @@
 import { Request, Response, Router } from "express"
-import { tournamentController } from '../controllers/tournamentController.js'
-import RequestWithUser from "../types/express/index.js"
-import { authenticate } from "../middleware/auth.js"
+import { authenticate } from "../middleware/auth"
+import { tournamentController } from "./tournamentController"
 
 // TODO - borrar comentari quan ja ho tingui clar
 // Responsabilitats

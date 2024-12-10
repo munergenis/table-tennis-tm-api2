@@ -1,11 +1,11 @@
 import { Request, Response } from "express"
-import { TournamentModel } from "../models/tournamentModel"
-import { CreateTournamentSchema, UpdateTournamentSchema } from "../schemas/tournamentSchema"
+import { TournamentModel } from "./tournamentModel"
+import { CreateTournamentSchema, UpdateTournamentSchema } from "./tournamentSchema"
 import { calculateMaxRounds } from "../utils/calculations"
 
 // TODO - borrar comentari quan ja ho tingui clar
 // Responsabilitats 
-// - intermediari entre router i logica de negoci
+// - intermediari entre router i logica de negoci (service)
 // - rep i valida dades de solicituds (zod, middlewares)
 // - crida metodes del model per executar operacions a la db
 // - prepara i envia resposta http al client
