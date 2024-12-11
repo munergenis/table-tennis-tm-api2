@@ -45,5 +45,5 @@ export interface Tournament {
   currentRoundNum: number 
   // ens determina l'estat del torneig. qualification | elimination | finished
   status: TournamentStatus 
-  // visible: boolean // TODO - tasca - afegir
+  visible: boolean
 }

@@ -50,4 +50,7 @@ export const UpdateTournamentSchema = z.object({
   date: z.string().refine((date) => !isNaN(Date.parse(date)), {
     message: 'La data no es vàlida',
   }),
+  visible: z.boolean()
 })
+
+export type updateTournamentClientData = z.infer<typeof UpdateTournamentSchema>

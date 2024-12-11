@@ -34,6 +34,7 @@ export const tournamentService = {
       eliminationRounds: [],
       currentRoundNum: 1,
       status: TournamentStatus.qualification,
+      visible: true,
     }
 
     return newTournament
