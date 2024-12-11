@@ -1,9 +1,9 @@
 import { Request, Response } from "express"
 import { TournamentModel } from "./tournamentModel"
-import { CreateTournamentSchema, UpdateTournamentSchema } from "./tournamentSchema"
-import { calculateMaxRounds } from "../utils/calculations"
+import { CreateTournamentSchema, tournamentClientData, UpdateTournamentSchema } from "./tournamentSchema"
+import { tournamentService } from "./service/tournamentService"
 
-// TODO - borrar comentari quan ja ho tingui clar
+// TODO - nota - borrar comentari quan ja ho tingui clar
 // Responsabilitats 
 // - intermediari entre router i logica de negoci (service)
 // - rep i valida dades de solicituds (zod, middlewares)
@@ -14,9 +14,9 @@ import { calculateMaxRounds } from "../utils/calculations"
 export const tournamentController = {
   async getAllTournaments(req: Request, res: Response) {
 
-    // TODO - manejar errors
+    // TODO - tasca - manejar errors
     // try
-    const result = await TournamentModel.getAllTournamets() // TODO - manejar la possibilitat derror // ja es maneja amb el try catch? seria un 500?
+    const result = await TournamentModel.getAllTournamets() // TODO - dubte i tasca - manejar la possibilitat derror // ja es maneja amb el try catch? seria un 500?
     // catch
 
     // OK
@@ -32,14 +32,13 @@ export const tournamentController = {
       return
     }
 
-    // TODO - manejar errors
+    // TODO - tasca - manejar errors
     // try
-    const result = await TournamentModel.getTournamentById(id) // TODO - manejar la possibilitat derror // ja es maneja amb el try catch? seria un 500?
+    const result = await TournamentModel.getTournamentById(id) // TODO - dubte i tasca - manejar la possibilitat derror // ja es maneja amb el try catch? seria un 500?
 
     if (!result) {
       // NOT FOUND
       res.status(404).json({ message: 'Tournament not found' })
-      // TODO - no funciona -> return res.status(404).json({ message: 'Tournament not found' })
       return
     }
 
@@ -50,54 +49,74 @@ export const tournamentController = {
   },
 
   async createTournament(req: Request, res: Response) {
-    // TODO - manejar errors
+    // TODO - tasca - manejar errors
     try {
 
-      const tournamentData = CreateTournamentSchema.parse(req.body)
+      const tournamentData: tournamentClientData = CreateTournamentSchema.parse(req.body)
 
-      const { maxQualificationRounds, maxEliminationRounds } = calculateMaxRounds(tournamentData.playersInput.length)
+      const generatedTournament = tournamentService.generateTournament(tournamentData)
 
-      const computedData = {
-        ...tournamentData,
-        maxQualificationRounds,
-        maxEliminationRounds,
-        currentRoundNum: 0,
-        status: 'pending', // TODO - treure de ts enum TournamentStatus
-      }
-
-      const newTournament = await TournamentModel.createTournament(computedData) // TODO - manejar la possibilitat derror // ja es maneja amb el try catch? seria un 500?
+      const newTournament = await TournamentModel.createTournament(generatedTournament) // TODO - dubte i tasca - manejar la possibilitat derror // ja es maneja amb el try catch? seria un 500?
 
       // CREATED
       res.status(201).json(newTournament)
-      // catch (error)
 
     } catch (error) {
-      return res.json({ message: error })
+      res.json({ message: error })
     }
-    // -- next(error)
   },
 
   async updateTournament(req: Request, res: Response) {
     const { id } = req.params
 
     if (!id) {
-      return res.status(400).json({ message: 'Bad request. Id is missing' })
+      res.status(400).json({ message: 'Bad request. Id is missing' })
+      return 
     }
 
-    // TODO - manejar errors
+    // TODO - tasca - manejar errors
     // try
     const parsedData = UpdateTournamentSchema.parse(req.body)
 
-    const tournament = await TournamentModel.getTournamentById(id) // TODO - manejar la possibilitat derror // ja es maneja amb el try catch? seria un 500?
+    const tournament = await TournamentModel.getTournamentById(id) // TODO - dubte i tasca - manejar la possibilitat derror // ja es maneja amb el try catch? seria un 500?
 
     if (!tournament) {
       // NOT FOUND
-      return res.status(404).json({ message: 'Tournament not found' })
+      res.status(404).json({ message: 'Tournament not found' })
+      return 
     }
 
-    const updatedTournament = await TournamentModel.updateTournament(id, parsedData) // TODO - manejar la possibilitat derror // ja es maneja amb el try catch? seria un 500?
+    const updatedTournament = await TournamentModel.updateTournament(id, parsedData) // TODO - dubte i tasca - manejar la possibilitat derror // ja es maneja amb el try catch? seria un 500?
 
     // OK
+    res.status(200).json(updatedTournament)
+    // catch
+  },
+
+  async randomizeFirstRound(req: Request, res: Response) {
+    const { id } = req.params
+    console.log(req.params)
+
+    if (!id) {
+      res.status(400).json({ message: 'Bad request. Id is missing' })
+      return
+    }
+
+    // TODO - tasca - manejar errors
+    // try
+    const tournament = await TournamentModel.getTournamentById(id)
+
+    if (!tournament) {
+      res.status(404).json({ message: 'Tournament not found' })
+    }
+
+    const tournamentWithNewFirstRound = tournamentService.randomizeFirstRound(tournament)
+
+    const updatedTournament = await TournamentModel.updateTournament(id, { 
+      players: tournamentWithNewFirstRound.players, 
+      qualificationRounds: tournamentWithNewFirstRound.qualificationRounds 
+    })
+    
     res.status(200).json(updatedTournament)
     // catch
   }

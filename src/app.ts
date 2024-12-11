@@ -6,7 +6,7 @@ const app = express()
 
 // Middlewares
 app.use(express.json())
-// TODO - revisar - en teoria es per manejar formularis
+// TODO - investigar - en teoria es per manejar formularis
 app.use(express.urlencoded({ extended: true }))
 
 app.use('/tournaments', tournamentRouter)

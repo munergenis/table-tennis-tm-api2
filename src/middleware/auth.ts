@@ -1,39 +1,23 @@
 import { NextFunction, Request, Response } from "express"
 
-export const authenticate = (req: Request, res: Response, next: NextFunction): void | Response => {
+export const authenticate = (req: Request, res: Response, next: NextFunction): void => {
+  // TODO - nota - esborrar quan estigui clar
   // Get token from header 'Authorization' (Bearer xxx-token) xxx = user | admin
   const token = req.headers.authorization?.split(' ')[1]
 
-  if (!token) {
+  if (!token || token !== 'admin-token') {
     // UNAUTHORIZED
-    return res.status(401).json({ message: 'Unauthorized, token required' })
+    res.status(401).json({ message: 'Unauthorized, token required' })
+    return 
   }
-
-  // Set a role based on token value
-  // TODO - revisar per quan implementi auth - cambiar els case segons necessitat
-  let userRole = ''
-  switch (token) {
-    case 'user-token':
-      userRole = 'user'
-      break
-
-    case 'admin-token':
-      userRole = 'admin'
-      break
-
-    default:
-      // FORBIDDEN
-      return res.status(403).json({ message: 'Forbidden, role not allowed' })
-  }
-
-  // Set role to object 'user' of req to use it on controllers
-  // req.user = { role: userRole }
 
   next()
 }
 
 // EXEMPLE d'autenticacio amb jwt
-// TODO - investigar i aplicar
+// TODO - investigar i tasca
+// investigar i aplicar
+
 // import jwt from 'jsonwebtoken';
 //
 // export const authenticate = (req, res, next) => {
@@ -49,4 +33,4 @@ export const authenticate = (req: Request, res: Response, next: NextFunction): v
 //   }
 // };
 //
-//--
+//
