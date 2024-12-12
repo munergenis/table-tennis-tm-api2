@@ -58,7 +58,6 @@ export const UpdateTournamentSchema = z.object({
 export type RegisterMatchClientData = z.infer<typeof RegisterMatchSchema>
 export const RegisterMatchSchema = z.object({
   id: z.string().uuid(), 
-  tournamentMode: z.nativeEnum(TournamentMode), 
   sets: z.array(
     z.tuple([                             //                      (x2 min) min. best-of-3
       z.number().nonnegative().int(),     // sets -> [ [int, int], [...] ] 

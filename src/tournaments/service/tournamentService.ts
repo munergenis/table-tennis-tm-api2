@@ -148,7 +148,7 @@ export const tournamentService = {
     const minWins = tournamentMode === TournamentMode.bestOf3 ? 2 : 3
     let winnerExists = false
 
-    for (const set in sets) {
+    for (const set of sets) {
       setsPlayed++
 
       if (set[0] > set[1]) {
