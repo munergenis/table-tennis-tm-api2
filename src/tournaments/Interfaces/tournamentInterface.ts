@@ -28,10 +28,11 @@ export type Round = Match[]
 
 // TODO - nota - esborrar comentaris
 export interface Tournament {
+  db_id: string
   id: string
   name: string
   tournamentMode: TournamentMode 
-  date: Date
+  date: string
   players: Player[]
   // nombre maxim de rondes de classificatoria
   maxQualificationRounds: number

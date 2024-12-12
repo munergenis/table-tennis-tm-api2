@@ -19,6 +19,6 @@ router.use(authenticate)
 router.post('/', tournamentController.createTournament)
 router.put('/:id', tournamentController.updateTournament)
 router.put('/:id/randomize-first-round', tournamentController.randomizeFirstRound)
-
+router.put('/:id/register-match-result', tournamentController.registerMatchResult)
 
 export default router

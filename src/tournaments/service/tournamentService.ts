@@ -2,15 +2,16 @@
 // Responsabilitats 
 // - logica de negoci 
 // - calculs i computacio
+// - validacio de tournament
 
 import { Match } from "../Interfaces/matchInterface"
 import { Player } from "../Interfaces/playerInterface"
-import { PlayerInput, Round, Tournament, TournamentStatus } from "../Interfaces/tournamentInterface"
-import { tournamentClientData } from "../tournamentSchema"
+import { PlayerInput, Round, Tournament, TournamentMode, TournamentStatus } from "../Interfaces/tournamentInterface"
+import { RegisterMatchClientData, TournamentClientData } from "../tournamentSchema"
 import { isAnyResultRegisteredInRounds, randomizeArray } from "./utils"
 
 export const tournamentService = {
-  generateTournament(tournamentData: tournamentClientData): Tournament {
+  generateTournament(tournamentData: TournamentClientData): Omit<Tournament, 'db_id'> {
     const {
       maxQualificationRounds,
       maxEliminationRounds,
@@ -22,11 +23,11 @@ export const tournamentService = {
     
     const firstRound = this.generateRound(initialOrderPlayersId) 
 
-    const newTournament: Tournament = {
+    const newTournament: Omit<Tournament, 'db_id'> = {
       id: crypto.randomUUID(),
       name: tournamentData.name,
       tournamentMode: tournamentData.tournamentMode,
-      date: new Date(tournamentData.date),
+      date: tournamentData.date,
       players,
       maxQualificationRounds,
       qualificationRounds: [firstRound],
@@ -135,5 +136,49 @@ export const tournamentService = {
       maxEliminationRounds = 4
     }
     return { maxQualificationRounds, maxEliminationRounds }
-  }
+  },
+
+  validateMatchResults(matchDetails: RegisterMatchClientData, tournamentMode: TournamentMode): { error?: string } {
+    const { sets } = matchDetails
+    
+    const setsCount = sets.length
+    let setsPlayed = 0
+    let pl1WinCount = 0
+    let pl2WinCount = 0
+    const minWins = tournamentMode === TournamentMode.bestOf3 ? 2 : 3
+    let winnerExists = false
+
+    for (const set in sets) {
+      setsPlayed++
+
+      if (set[0] > set[1]) {
+        pl1WinCount++
+      } else {
+        pl2WinCount++
+      }
+
+      if (pl1WinCount === minWins || pl2WinCount === minWins) {
+        winnerExists = true
+        break
+      }
+    }
+
+    if (!winnerExists) {
+      return { error: `No es detecta cap guanyador amb ${minWins} victòries`}
+    }
+
+    if (setsPlayed < setsCount) { // TODO - nota - evitar entrar partits extres (es detecta victoria amb menys partits)
+      return { error: `Es detecta victòria amb menys partits. Al set ${setsPlayed}. El jugador ${pl1WinCount > pl2WinCount ? '1' : '2'} aconsegueix victòria`}
+    }
+
+    return {}
+
+    // TODO - dubte - cal que validi tambe els sets si ja ho he fet amb zod?
+    // for (const set of matchSets) {
+    //   const pl1Points = set[0]
+    //   const pl2Points = set[1]
+    //   if (pl1Points >= 11 )
+    // }
+    // return {}
+  },
 }
