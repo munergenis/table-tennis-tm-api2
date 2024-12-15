@@ -1,18 +1,22 @@
-import { NextFunction, Request, Response } from "express"
+import { NextFunction, Request, Response } from "express";
 
-export const authenticate = (req: Request, res: Response, next: NextFunction): void => {
+export const authenticate = (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): void => {
   // TODO - nota - esborrar quan estigui clar
   // Get token from header 'Authorization' (Bearer xxx-token) xxx = user | admin
-  const token = req.headers.authorization?.split(' ')[1]
+  const token = req.headers.authorization?.split(" ")[1];
 
-  if (!token || token !== 'admin-token') {
+  if (!token || token !== "admin-token") {
     // UNAUTHORIZED
-    res.status(401).json({ message: 'Unauthorized, token required' })
-    return 
+    res.status(401).json({ message: "Unauthorized, token required" });
+    return;
   }
 
-  next()
-}
+  next();
+};
 
 // EXEMPLE d'autenticacio amb jwt
 // TODO - investigar i tasca

@@ -1,24 +1,42 @@
-import { Request, Response, Router } from "express"
-import { authenticate } from "../middleware/auth"
-import { tournamentController } from "./tournamentController"
+import { Router } from "express";
+import { authenticate } from "@middleware/auth.js";
+import { tournamentController } from "@tournaments/tournamentController.js";
 
 // TODO - nota - borrar comentari quan ja ho tingui clar
 // Responsabilitats
 // - defineix rutes relacionades amb tornejos
 // - conecta cada ruta amb el controlador corresponent
 // - pot incloure middleware especific per rutes com autenticacio o permisos
-const router = Router()
+const router = Router();
 
 // rutes publiques
-router.get('/', tournamentController.getAllTournaments)
-router.get('/:id', tournamentController.getTournamentById)
+router.get("/", tournamentController.getAllTournaments);
+router.get("/:tournamentId", tournamentController.getTournamentById);
 
-// auth
-router.use(authenticate)
 // rutes privades
-router.post('/', tournamentController.createTournament)
-router.put('/:id', tournamentController.updateTournament)
-router.put('/:id/randomize-first-round', tournamentController.randomizeFirstRound)
-router.put('/:id/register-match-result', tournamentController.registerMatchResult)
+router.post("/", authenticate, tournamentController.createTournament);
+router.patch(
+  "/:tournamentId",
+  authenticate,
+  tournamentController.updateTournament
+);
+router.post(
+  "/:tournamentId/randomize-first-round",
+  authenticate,
+  tournamentController.randomizeFirstRound
+);
+router.patch(
+  "/:tournamentId/matches/:matchId",
+  authenticate,
+  tournamentController.registerMatchResult
+);
+// router.post(
+//   "/:tournamentId/rounds",
+//   authenticate,
+//   tournamentController.createNextRound
+// );
 
-export default router
+// TODO - tasca
+// router.patch('/:tournamentId/players/:playerId', authenticate, tournamentController.updatePlayerDetails )
+
+export default router;
