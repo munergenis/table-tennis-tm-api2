@@ -197,14 +197,16 @@ export function validateSet(set: SingleSet): {
 export function findMatchInTournament(
   tournament: Tournament,
   matchId: string
-): Match | undefined {
+): { match: Match | undefined; isQualificationMatch: boolean } {
   let match = findMatchInRounds(tournament.qualificationRounds, matchId);
+  let isQualificationMatch = true;
 
   if (!match) {
     match = findMatchInRounds(tournament.eliminationRounds, matchId);
+    isQualificationMatch = false;
   }
 
-  return match;
+  return { match, isQualificationMatch };
 }
 
 export function findPlayerInTournament(

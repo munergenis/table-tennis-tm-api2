@@ -103,7 +103,10 @@ export const tournamentService = {
     }
 
     // buscar match i retornar referencia
-    const match = findMatchInTournament(tournament, matchId);
+    const { match, isQualificationMatch } = findMatchInTournament(
+      tournament,
+      matchId
+    );
 
     if (!match) {
       return undefined;
@@ -113,24 +116,31 @@ export const tournamentService = {
     match.sets = matchResults.sets;
 
     // recalcular i actualitzar puntuacio players
-    const player1Stats = recalculatePlayerStats(
-      match.player1Id,
-      tournament.qualificationRounds
-    );
-    const player2Stats = recalculatePlayerStats(
-      match.player2Id,
-      tournament.qualificationRounds
-    );
+    if (isQualificationMatch) {
+      const player1Stats = recalculatePlayerStats(
+        match.player1Id,
+        tournament.qualificationRounds
+      );
+      const player2Stats = recalculatePlayerStats(
+        match.player2Id,
+        tournament.qualificationRounds
+      );
+      const player1 = findPlayerInTournament(
+        match.player1Id,
+        tournament.players
+      );
+      const player2 = findPlayerInTournament(
+        match.player2Id,
+        tournament.players
+      );
 
-    const player1 = findPlayerInTournament(match.player1Id, tournament.players);
-    const player2 = findPlayerInTournament(match.player2Id, tournament.players);
+      if (!player1 || !player2) {
+        throw new Error("Players not found");
+      }
 
-    if (!player1 || !player2) {
-      throw new Error("Players not found");
+      Object.assign(player1, player1Stats);
+      Object.assign(player2, player2Stats);
     }
-
-    Object.assign(player1, player1Stats);
-    Object.assign(player2, player2Stats);
 
     // guardar a db tournament
     TournamentModel.updateFullTournament(touranmentId, tournament);
