@@ -1,4 +1,5 @@
 import { Match } from "@tournaments/Interfaces/matchInterface.js";
+import { Player } from "@tournaments/Interfaces/playerInterface.js";
 import {
   Tournament,
   TournamentStatus,
@@ -86,7 +87,7 @@ export const tournamentService = {
     touranmentId: string,
     matchId: string,
     matchResults: RegisterMatchClientData
-  ): Promise<Match | undefined> {
+  ): Promise<Match> {
     // buscar tournament per verificar el tournament Mode
     const tournament = await TournamentModel.getTournamentById(touranmentId);
 
@@ -196,5 +197,42 @@ export const tournamentService = {
     }
 
     return updatedTournament;
+  },
+
+  async updatePlayerDetails(
+    touranmentId: string,
+    playerId: string,
+    playerDetails: Pick<Player, "playerName" | "playerClub">
+  ): Promise<Player> {
+    const tournament = await TournamentModel.getTournamentById(touranmentId);
+
+    if (!tournament) {
+      const notFoundError = new Error("Tournament not found");
+      notFoundError.name = "Not found";
+      throw notFoundError;
+    }
+
+    const player = findPlayerInTournament(playerId, tournament.classification);
+
+    if (!player) {
+      const notFoundError = new Error("Player not found");
+      notFoundError.name = "Not found";
+      throw notFoundError;
+    }
+
+    Object.assign(player, playerDetails);
+
+    const updatedTournament = await TournamentModel.updateFullTournament(
+      touranmentId,
+      tournament
+    );
+
+    if (!updatedTournament) {
+      const notFoundError = new Error("Tournament not found");
+      notFoundError.name = "Not found";
+      throw notFoundError;
+    }
+
+    return player;
   },
 };

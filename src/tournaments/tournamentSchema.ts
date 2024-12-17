@@ -65,3 +65,15 @@ export const RegisterMatchSchema = z.object({
     .min(2)
     .max(5),
 });
+
+export type UpdatePlayerDetailsClientData = z.infer<
+  typeof UpdatePlayerDetailsSchema
+>;
+export const UpdatePlayerDetailsSchema = z.object({
+  playerName: z.string().min(2, {
+    message: "Mínim 2 caracters",
+  }),
+  playerClub: z.string().min(3, {
+    message: "Mínim 3 caracters",
+  }),
+});

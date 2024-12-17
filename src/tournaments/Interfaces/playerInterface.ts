@@ -1,12 +1,12 @@
 export type PlayerStats = Omit<
   Player,
-  "id" | "name" | "club" | "number" | "initialOrder"
+  "id" | "playerName" | "playerClub" | "number" | "initialOrder"
 >;
 
 export interface Player {
   id: string;
-  name: string;
-  club: string;
+  playerName: string;
+  playerClub: string;
   number: number;
   initialOrder: number;
   setsWon: number;

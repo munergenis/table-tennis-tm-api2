@@ -83,8 +83,8 @@ export function generatePlayersList(playersInput: PlayerInput[]): Player[] {
 
     const newPlayer: Player = {
       id: crypto.randomUUID(),
-      name: player.playerName,
-      club: player.playerClub,
+      playerName: player.playerName,
+      playerClub: player.playerClub,
       number,
       initialOrder: -1,
       setsWon: 0,

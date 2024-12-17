@@ -5,10 +5,13 @@ import {
   RegisterMatchClientData,
   RegisterMatchSchema,
   TournamentClientData,
+  UpdatePlayerDetailsClientData,
+  UpdatePlayerDetailsSchema,
   UpdateTournamentClientData,
   UpdateTournamentSchema,
 } from "@tournaments/tournamentSchema.js";
 import { ZodError } from "zod";
+import { Player } from "@tournaments/Interfaces/playerInterface.js";
 
 // TODO - dubte i investigar - s'esta gestionant tots els errors amb 500, pero s'hauria de poder filtrar el tipus d'error al catch
 export const tournamentController = {
@@ -161,22 +164,21 @@ export const tournamentController = {
         matchResults
       );
     } catch (err) {
-      let status = 500;
-      let message = "Server error";
-
       if (err instanceof Error) {
         if (err.name === "Not found") {
-          status = 404;
-          message = err.message;
+          // Not found
+          res.status(404).json(err.message);
+          return;
         }
         if (err.name === "Validation") {
-          status = 400;
-          message = err.message;
+          // Bad request
+          res.status(400).json(err.message);
+          return;
         }
       }
 
-      // filter error
-      res.status(status).json({ error: err, message });
+      // 500
+      res.status(500).json(err);
       return;
     }
 
@@ -208,5 +210,46 @@ export const tournamentController = {
 
     // CREATED
     res.status(201).json(tournamentWithNextRound);
+  },
+
+  async updatePlayerDetails(req: Request, res: Response) {
+    const { tournamentId, playerId } = req.params;
+    let playerDetails: UpdatePlayerDetailsClientData;
+    let updatedPlayer: Player;
+
+    try {
+      playerDetails = UpdatePlayerDetailsSchema.parse(req.body);
+    } catch (err) {
+      if (err instanceof ZodError) {
+        // Bad request
+        res.status(400).json(err);
+        return;
+      }
+      // 500
+      res.status(500).json(err);
+      return;
+    }
+
+    try {
+      updatedPlayer = await tournamentService.updatePlayerDetails(
+        tournamentId,
+        playerId,
+        playerDetails
+      );
+    } catch (err) {
+      if (err instanceof Error) {
+        if (err.name === "Not found") {
+          // Not found
+          res.status(404).json(err.message);
+          return;
+        }
+      }
+      // 500
+      res.status(500).json(err);
+      return;
+    }
+
+    // OK
+    res.status(200).json(updatedPlayer);
   },
 };
