@@ -30,11 +30,11 @@ router.patch(
   authenticate,
   tournamentController.registerMatchResult
 );
-// router.post(
-//   "/:tournamentId/rounds",
-//   authenticate,
-//   tournamentController.createNextRound
-// );
+router.post(
+  "/:tournamentId/rounds",
+  authenticate,
+  tournamentController.createNextRound
+);
 
 // TODO - tasca
 // router.patch('/:tournamentId/players/:playerId', authenticate, tournamentController.updatePlayerDetails )

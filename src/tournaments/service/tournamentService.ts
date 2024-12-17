@@ -4,12 +4,14 @@ import {
   TournamentStatus,
 } from "@tournaments/Interfaces/tournamentInterface.js";
 import {
+  createNextRound,
   createTournament,
   findMatchInTournament,
   findPlayerInTournament,
   isAnyResultRegisteredInRounds,
   recalculatePlayerStats,
   resetFirstRound,
+  sortClassification,
   validateMatchResults,
 } from "@tournaments/service/utils.js";
 import { TournamentModel } from "@tournaments/tournamentModel.js";
@@ -73,7 +75,7 @@ export const tournamentService = {
     resetFirstRound(tournament);
 
     const updatedTournament = TournamentModel.resetFirstRound(tournamentId, {
-      players: tournament.players,
+      classification: tournament.classification,
       qualificationRounds: tournament.qualificationRounds,
     });
 
@@ -89,7 +91,11 @@ export const tournamentService = {
     const tournament = await TournamentModel.getTournamentById(touranmentId);
 
     if (!tournament) {
-      return undefined;
+      // TODO - crear nova clase amb errors i extendre Error -> NotFoundError amb status etc al catch es fa instanceof NotFoundError i es pot filtrar errors des de service
+      // 404
+      const notFoundError = new Error("Tournament not found");
+      notFoundError.name = "Not found";
+      throw notFoundError;
     }
 
     // validar match
@@ -99,7 +105,10 @@ export const tournamentService = {
     );
 
     if (error) {
-      throw new Error(error);
+      // 400
+      const validationError = new Error(error);
+      validationError.name = "Validation";
+      throw validationError;
     }
 
     // buscar match i retornar referencia
@@ -109,13 +118,16 @@ export const tournamentService = {
     );
 
     if (!match) {
-      return undefined;
+      // 404
+      const notFoundError = new Error("Match not found");
+      notFoundError.name = "Not found";
+      throw notFoundError;
     }
 
     // actualitzar match (actualitzem la referencia al match dintre el tournament)
     match.sets = matchResults.sets;
 
-    // recalcular i actualitzar puntuacio players
+    // recalcular i actualitzar puntuacio players (actualitzem la referencia dels players de tournament)
     if (isQualificationMatch) {
       const player1Stats = recalculatePlayerStats(
         match.player1Id,
@@ -127,11 +139,11 @@ export const tournamentService = {
       );
       const player1 = findPlayerInTournament(
         match.player1Id,
-        tournament.players
+        tournament.classification
       );
       const player2 = findPlayerInTournament(
         match.player2Id,
-        tournament.players
+        tournament.classification
       );
 
       if (!player1 || !player2) {
@@ -140,12 +152,49 @@ export const tournamentService = {
 
       Object.assign(player1, player1Stats);
       Object.assign(player2, player2Stats);
+
+      sortClassification(tournament.classification);
     }
 
     // guardar a db tournament
-    TournamentModel.updateFullTournament(touranmentId, tournament);
+    const updatedTournament = await TournamentModel.updateFullTournament(
+      touranmentId,
+      tournament
+    );
 
-    // tornar match
+    if (!updatedTournament) {
+      const notFoundError = new Error("Tournament not found");
+      notFoundError.name = "Not found";
+      throw notFoundError;
+    }
+
+    // retornar match
     return match;
+  },
+
+  async createNextRound(tournamentId: string): Promise<Tournament | undefined> {
+    const tournament = await TournamentModel.getTournamentById(tournamentId);
+
+    if (!tournament) {
+      const notFoundError = new Error("Tournament not found");
+      notFoundError.name = "Not found";
+      throw notFoundError;
+    }
+
+    // crea next round o finalitza torneig
+    createNextRound(tournament);
+
+    const updatedTournament = await TournamentModel.updateFullTournament(
+      tournamentId,
+      tournament
+    );
+
+    if (!updatedTournament) {
+      const notFoundError = new Error("Tournament not found");
+      notFoundError.name = "Not found";
+      throw notFoundError;
+    }
+
+    return updatedTournament;
   },
 };

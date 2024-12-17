@@ -31,9 +31,10 @@ export interface Tournament {
   db_id: string;
   id: string;
   name: string;
+  winnerId: string | undefined;
   tournamentMode: TournamentMode;
   date: string;
-  players: Player[];
+  classification: Player[];
   // nombre maxim de rondes de classificatoria
   maxQualificationRounds: number;
   // aqui es guarden els partits amb els resultats. Es vindra aqui a calcular i recalcular puntuacions

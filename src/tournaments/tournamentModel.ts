@@ -55,23 +55,17 @@ export const TournamentModel = {
   async resetFirstRound(
     tournamentId: string,
     {
-      players,
+      classification,
       qualificationRounds,
-    }: Pick<Tournament, "players" | "qualificationRounds">
+    }: Pick<Tournament, "classification" | "qualificationRounds">
   ): Promise<Tournament | undefined> {
     const tournament = tournaments.find(
       (tournament) => tournament.id === tournamentId
     );
 
     if (tournament) {
-      Object.assign(tournament, {
-        players,
-        qualificationRounds,
-      });
-
-      // TODO - tasca i test - verificar que funciona igual que object assign
-      // tournament.qualificationRounds = qualificationRounds;
-      // tournament.players = players;
+      tournament.classification = classification;
+      tournament.qualificationRounds = qualificationRounds;
     }
 
     return tournament;

@@ -161,8 +161,22 @@ export const tournamentController = {
         matchResults
       );
     } catch (err) {
-      // 500
-      res.status(500).json(err);
+      let status = 500;
+      let message = "Server error";
+
+      if (err instanceof Error) {
+        if (err.name === "Not found") {
+          status = 404;
+          message = err.message;
+        }
+        if (err.name === "Validation") {
+          status = 400;
+          message = err.message;
+        }
+      }
+
+      // filter error
+      res.status(status).json({ error: err, message });
       return;
     }
 
@@ -170,5 +184,29 @@ export const tournamentController = {
     res.status(200).json(updatedMatch);
   },
 
-  // async createNextRound(req: Request, res: Response) {},
+  async createNextRound(req: Request, res: Response) {
+    const { tournamentId } = req.params;
+    let tournamentWithNextRound;
+
+    try {
+      tournamentWithNextRound = tournamentService.createNextRound(tournamentId);
+    } catch (err) {
+      let status = 500;
+      let message = "Server error";
+
+      if (err instanceof Error) {
+        if (err.name === "Bad request") {
+          status = 400;
+          message = err.message;
+        }
+      }
+
+      // filter error
+      res.status(status).json({ error: err, message });
+      return;
+    }
+
+    // CREATED
+    res.status(201).json(tournamentWithNextRound);
+  },
 };

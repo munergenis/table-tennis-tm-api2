@@ -35,14 +35,15 @@ export function createTournament(
   const initialOrderPlayersId =
     setPlayersInitialOrderAndGetOrderedIdList(players);
 
-  const firstRound = generateRound(initialOrderPlayersId);
+  const firstRound = generateQualificationRound(initialOrderPlayersId);
 
   const newTournament: Omit<Tournament, "db_id"> = {
     id: crypto.randomUUID(),
     name: tournamentData.name,
+    winnerId: undefined,
     tournamentMode: tournamentData.tournamentMode,
     date: tournamentData.date,
-    players,
+    classification: players,
     maxQualificationRounds,
     qualificationRounds: [firstRound],
     maxEliminationRounds,
@@ -101,21 +102,29 @@ export function generatePlayersList(playersInput: PlayerInput[]): Player[] {
   return playersList;
 }
 
-export function generateRound(playersIdList: string[]): Round {
-  const round = [];
+export function generateQualificationRound(playersIdList: string[]): Round {
+  const round: Round = [];
 
   for (let i = 0, table = 1; i < playersIdList.length; i += 2, table++) {
-    const match: Match = {
-      id: crypto.randomUUID(),
-      player1Id: playersIdList[i],
-      player2Id: playersIdList[i + 1],
-      table,
-      sets: [[0, 0]],
-    };
+    const match = generateMatch(playersIdList[i], playersIdList[i + 1], table);
     round.push(match);
   }
 
   return round;
+}
+
+export function generateMatch(
+  player1Id: string,
+  player2Id: string,
+  table: number
+): Match {
+  return {
+    id: crypto.randomUUID(),
+    player1Id: player1Id,
+    player2Id: player2Id,
+    table,
+    sets: [[0, 0]],
+  };
 }
 
 export function setPlayersInitialOrderAndGetOrderedIdList(
@@ -145,21 +154,12 @@ export function isAnyResultRegisteredInRounds(rounds: Round[]): boolean {
 }
 
 export function resetFirstRound(tournament: Tournament): void {
-  const playersList = tournament.players;
+  const playersList = tournament.classification;
   const playersIdList = setPlayersInitialOrderAndGetOrderedIdList(playersList);
-  const newFirstRound = generateRound(playersIdList);
+  const newFirstRound = generateQualificationRound(playersIdList);
 
-  Object.assign(tournament, {
-    palyers: playersList,
-    qualificationRounds: [newFirstRound],
-  });
-
-  // TODO - tasca i test - esborrar quan verifiqui que object assign funciona igual
-  // tournament = {
-  //   ...tournament,
-  //   players: playersList,
-  //   qualificationRounds: [newFirstRound],
-  // };
+  tournament.classification = playersList;
+  tournament.qualificationRounds = [newFirstRound];
 }
 
 export function validateSet(set: SingleSet): {
@@ -347,4 +347,191 @@ export function recalculatePlayerStats(
     pointsAgainst,
     tournamentPoints,
   };
+}
+
+export function createNextRound(tournament: Tournament): void {
+  if (tournament.status === TournamentStatus.finished) {
+    const badRequestError = new Error("Tournament already finished");
+    badRequestError.name = "Bad request";
+    throw badRequestError;
+  }
+
+  const currentRound = getCurrentRound(tournament);
+
+  const { error } = validateRoundResults(currentRound);
+
+  if (error) {
+    const badRequestError = new Error(error);
+    badRequestError.name = "Bad request";
+    throw badRequestError;
+  }
+
+  if (tournament.status === TournamentStatus.qualification) {
+    if (tournament.currentRoundNum < tournament.maxQualificationRounds) {
+      // segueixen qualificationRounds
+      const nextQualificationRound =
+        getNextQualificationRoundMatches(currentRound);
+      tournament.qualificationRounds.push(nextQualificationRound);
+    } else {
+      // acaben qualificationRounds
+      tournament.status = TournamentStatus.elimination;
+      tournament.currentRoundNum = 0;
+      const maxQualifiedPlayersNum = Math.pow(
+        2,
+        tournament.maxEliminationRounds
+      );
+      const qualifiedPlayers = tournament.classification.slice(
+        0,
+        maxQualifiedPlayersNum
+      );
+      const firstEliminationRound =
+        getFirstEliminationRoundMatches(qualifiedPlayers);
+
+      tournament.eliminationRounds = [firstEliminationRound];
+    }
+  } else if (tournament.status === TournamentStatus.elimination) {
+    if (tournament.currentRoundNum < tournament.maxEliminationRounds) {
+      // segueixen eliminationRounds
+      const nextEliminationRound = getNextEliminationRoundMatches(currentRound);
+      tournament.eliminationRounds.push(nextEliminationRound);
+    } else {
+      // acaba torneig
+      tournament.status = TournamentStatus.finished;
+      tournament.winnerId = getMatchWinnerLoserId(currentRound[0]).winnerId;
+      return;
+    }
+  }
+
+  tournament.currentRoundNum++;
+}
+
+export function getCurrentRound(tournament: Tournament): Round {
+  let currentRound: Round;
+
+  if (tournament.status === TournamentStatus.qualification) {
+    currentRound =
+      tournament.qualificationRounds[tournament.currentRoundNum - 1];
+  } else if (tournament.status === TournamentStatus.elimination) {
+    currentRound = tournament.eliminationRounds[tournament.currentRoundNum - 1];
+  } else {
+    currentRound =
+      tournament.eliminationRounds[tournament.eliminationRounds.length - 1];
+  }
+
+  return currentRound;
+}
+
+export function validateRoundResults(currentRound: Round): { error?: string } {
+  for (const match of currentRound) {
+    for (const set of match.sets) {
+      if (set[0] === 0 && set[1] === 0) {
+        return { error: "Tots els partits han d'estar registrats" };
+      }
+    }
+  }
+  return {};
+}
+
+export function getNextQualificationRoundMatches(currentRound: Round): Round {
+  const winnersIdArr = [];
+  const losersIdArr = [];
+
+  for (const match of currentRound) {
+    const { winnerId, loserId } = getMatchWinnerLoserId(match);
+    winnersIdArr.push(winnerId);
+    losersIdArr.push(loserId);
+  }
+
+  return generateQualificationRound([...winnersIdArr, ...losersIdArr]);
+}
+
+export function getMatchWinnerLoserId(match: Match): {
+  winnerId: string;
+  loserId: string;
+} {
+  let pl1Points = 0;
+  let pl2Points = 0;
+  for (const set of match.sets) {
+    if (set[0] > set[1]) {
+      pl1Points++;
+    } else if (set[1] > set[0]) {
+      pl2Points++;
+    }
+  }
+  return {
+    winnerId: pl1Points > pl2Points ? match.player1Id : match.player2Id,
+    loserId: pl1Points < pl2Points ? match.player1Id : match.player2Id,
+  };
+}
+
+export function getFirstEliminationRoundMatches(
+  qualifiedPlayers: Player[]
+): Round {
+  const firstHalf: Match[] = [];
+  const secondHalf: Match[] = [];
+  const tableNum = qualifiedPlayers.length / 2;
+
+  for (let i = 0, j = qualifiedPlayers.length - 1; i < tableNum; i++, j--) {
+    const pl1Id = qualifiedPlayers[i].id;
+    const pl2Id = qualifiedPlayers[j].id;
+    if (i % 2 === 0) {
+      const nextTable = firstHalf.length + 1;
+      firstHalf.push(generateMatch(pl1Id, pl2Id, nextTable));
+    } else {
+      const nextTable = secondHalf.length + tableNum / 2 + 1;
+      secondHalf.push(generateMatch(pl1Id, pl2Id, nextTable));
+    }
+  }
+  return [...firstHalf, ...secondHalf];
+}
+
+export function getNextEliminationRoundMatches(currentRound: Round): Round {
+  const nextRound: Round = [];
+
+  for (let i = 0, table = 1; i < currentRound.length; i += 2, table++) {
+    const { winnerId: pl1Id } = getMatchWinnerLoserId(currentRound[i]);
+    const { winnerId: pl2Id } = getMatchWinnerLoserId(currentRound[i + 1]);
+    const nextMatch = generateMatch(pl1Id, pl2Id, table);
+    nextRound.push(nextMatch);
+  }
+
+  return nextRound;
+}
+
+export function sortClassification(classification: Player[]): void {
+  classification.sort((a, b) => {
+    // 1. Ordenar per mes PUNTS DE TORNEIG (descendent)
+    if (b.tournamentPoints !== a.tournamentPoints) {
+      return b.tournamentPoints - a.tournamentPoints;
+    }
+
+    // 2. Desempatar per major DIFERENCIA de SETS GUANYATS-PERDUTS (descendent)
+    const aSetDifference = a.setsWon - a.setsLost;
+    const bSetDifference = b.setsWon - b.setsLost;
+
+    if (bSetDifference !== aSetDifference) {
+      return bSetDifference - aSetDifference;
+    }
+
+    // 3. Desempatar per mes SETS GUANYATS (descendent)
+    if (b.setsWon !== a.setsWon) {
+      return b.setsWon - a.setsWon;
+    }
+
+    // 4. Desempatar per major DIFERENCIA de PUNTS (descendent)
+    const aPointDifference = a.pointsFor - a.pointsAgainst;
+    const bPointDifference = b.pointsFor - b.pointsAgainst;
+
+    if (bPointDifference !== aPointDifference) {
+      return bPointDifference - aPointDifference;
+    }
+
+    // 5. Desempatar per mes PUNTS GUANYATS (descendent)
+    if (b.pointsFor !== a.pointsFor) {
+      return b.pointsFor - a.pointsFor;
+    }
+
+    // Si segueix l'empat, es mante l'ordre original
+    return 0;
+  });
 }
