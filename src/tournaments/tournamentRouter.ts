@@ -35,8 +35,10 @@ router.post(
   authenticate,
   tournamentController.createNextRound
 );
-
-// TODO - tasca
-// router.patch('/:tournamentId/players/:playerId', authenticate, tournamentController.updatePlayerDetails )
+router.patch(
+  "/:tournamentId/players/:playerId",
+  authenticate,
+  tournamentController.updatePlayerDetails
+);
 
 export default router;
